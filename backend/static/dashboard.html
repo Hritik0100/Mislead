@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSINT Analyst Dashboard</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;background:#0f172a;color:#e2e8f0}header{padding:16px 24px;background:#111c33}main{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px}.card{background:#1e293b;border-radius:12px;padding:16px}input,textarea,select,button{width:100%;margin:6px 0;padding:8px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0}button{background:#2563eb;border:none;cursor:pointer}button:hover{background:#1d4ed8}pre{white-space:pre-wrap;background:#0b1226;padding:12px;border-radius:8px;max-height:500px;overflow:auto}a{color:#93c5fd}.phase{font-size:12px;color:#94a3b8}</style></head>
+<body><header><h2>OSINT REPORT: Account Identification Workflow <span class="phase">P1 Objective → P2 Platforms → P3 Search → P4 Accounts → P5 A-E Queries → P6 Report</span></h2></header>
+<main><div class="card"><h3>1. Create Case (P1-P3)</h3>
+<input id="title" value="Misleading claim - health"><textarea id="objective">Identify accounts spreading misleading health claim</textarea>
+<input id="keywords" value="vaccine,breaking,cure"><input id="platforms" value="rss,web,telegram">
+<button onclick="createCase()">Create case</button>
+<h3>2. Collect (P2/P4)</h3><textarea id="sources">[{"type":"rss","url":"https://feeds.bbci.co.uk/news/rss.xml"},{"type":"manual","platform":"x","username":"seed_account","text":"Breaking: shocking secret cure exposed, share before deleted http://example.invalid/a"}]</textarea>
+<button onclick="collect()">Run collection</button>
+<h3>3. Analyze A-E (P5)</h3><button onclick="analyze()">Run full A-E analysis</button>
+<h3>4. Report (P6)</h3><button onclick="report()">Load report JSON</button><button onclick="openHtml()">Open HTML report</button>
+<div id="caseId" style="margin-top:8px"></div></div>
+<div class="card"><h3>Output</h3><pre id="out">Ready. Create a case to begin.</pre></div></main>
+<script>
+let CID="";
+const out=m=>document.getElementById("out").textContent=typeof m=="string"?m:JSON.stringify(m,null,2);
+async function createCase(){const r=await fetch("/api/cases",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:title.value,objective:objective.value,keywords:keywords.value.split(","),platforms:platforms.value.split(",")})});const j=await r.json();CID=j.id;caseId.innerHTML="Case: <b>"+CID+"</b>";out(j)}
+async function collect(){if(!CID)return out("create case first");let s;try{s=JSON.parse(sources.value)}catch(e){return out("bad sources JSON")};const r=await fetch(`/api/cases/${CID}/collect`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sources:s,max_items:30})});out(await r.json())}
+async function analyze(){const r=await fetch(`/api/cases/${CID}/analysis`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({analysis_type:"full"})});out(await r.json())}
+async function report(){const r=await fetch(`/api/cases/${CID}/report`);out(await r.json())}
+function openHtml(){window.open(`/api/cases/${CID}/report?format=html`,"_blank")}
+</script></body></html>

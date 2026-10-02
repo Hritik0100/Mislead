@@ -1,0 +1,55 @@
+# ---- Secrets: never commit ----
+# backend/.env holds live FB/IG passwords and X/FB/IG session cookies.
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Browser session state: cookie jars for the investigator's own accounts.
+data/sessions/
+*.storage_state.json
+
+# ---- Investigation data (large, machine-specific) ----
+# SQLite case database and SHA-256'd evidence artifacts. Back these up
+# separately if you need them; they are not source.
+data/osint.db
+data/evidence/
+*.db
+*.sqlite3
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Editors / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ---- Local scratch screenshots (architecture/ holds the real diagram) ----
+/im.png
+/imV2.png
+/IMG-*.jpg
+/IMG-*.png
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-error.log*

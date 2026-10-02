@@ -1,0 +1,11 @@
+# macOS-only OCR engine (Apple Vision via pyobjc).
+#
+# Tesseract is the default engine in app/services/ocr/service.py and needs no
+# Python package, so this file is optional and must NOT be installed on Linux or
+# Windows -- `ocrmac` only builds on macOS and fails the whole install there.
+#
+# macOS:   pip install -r requirements-ocr-macos.txt
+# Linux:   skip. Install the tesseract binary instead:
+#            sudo apt install tesseract-ocr tesseract-ocr-hin tesseract-ocr-eng
+# Windows: skip. Install Tesseract from UB Mannheim's installer and add it to PATH.
+ocrmac>=1.0

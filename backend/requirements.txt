@@ -11,6 +11,9 @@ lxml==5.3.0
 groq==0.11.0
 jinja2==3.1.5
 python-dateutil==2.9.0
+# Real Telegram MTProto collector (investigator-owned account only).
+# Telethon is async, so the collector runs it in an isolated subprocess.
+telethon==1.36.0
 
 # Image handling for local OCR. Cross-platform, safe to install everywhere.
 pillow>=10

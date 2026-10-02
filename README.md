@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/Telethon-2AABEE?style=for-the-badge&logo=telegram&logoColor=white" alt="Telethon">
   <img src="https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
 </p>
@@ -60,7 +61,7 @@ Raw posts and media are turned into **hash-verified evidence**, run through a st
 
 | Platform | Auth required | Session type | Status |
 | :--- | :---: | --- | :---: |
-| 💬 **Telegram** | ✅ Login + session | MTProto session / bot token | 🚧 In progress |
+| 💬 **Telegram** | ✅ Login + session | MTProto (Telethon) | ✅ **Live** |
 | 🧩 **Element / Matrix** | ✅ Login + session | Access token + homeserver | 🚧 In progress |
 | 📲 **WhatsApp** | ✅ Login + session | Linked-device session | 🚧 In progress |
 | 𝕏 **X (Twitter)** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
@@ -73,9 +74,70 @@ Raw posts and media are turned into **hash-verified evidence**, run through a st
 **Legend:** ✅ Live · 🚧 In progress · ⏳ Planned
 
 <details>
-<summary><b>🔐 How sessions are provided</b></summary>
+<summary><b>💬 Setting up Telegram (real collector)</b></summary>
 
-Sessions are exported from **your own** logged-in browser and supplied via environment variables — never committed, never logged, never sent to the LLM.
+Telegram is collected over **MTProto with Telethon** — the official Telegram
+client protocol, not scraping. It only ever reads what the investigator's own
+account can legitimately see.
+
+**1. Get app credentials** — <https://my.telegram.org> → *API development tools*.
+You get an `api_id` and `api_hash`. This identifies your app, it is not user auth.
+
+**2. Add them to `backend/.env`**
+
+```bash
+TELEGRAM_API_ID=123456
+TELEGRAM_API_HASH=0123456789abcdef0123456789abcdef
+TELEGRAM_PHONE=+919876543210        # E.164, only used by the login step
+# TELEGRAM_2FA_PASSWORD=            # only if the account has 2FA enabled
+```
+
+**3. Create the session once, from your terminal**
+
+```bash
+cd backend
+python -m app.services.collectors.telegram login
+```
+
+It asks for the login code (and 2FA password, if enabled) **on your TTY** and
+writes a `0600` session file. That is the only place a secret is ever typed —
+the collector itself never accepts a code or password.
+
+**4. Collect**
+
+Collections now reuse that session silently. Add the source to a case:
+
+```json
+{ "type": "telegram", "channel": "some_channel", "max_items": 50 }
+{ "type": "telegram", "channel": "some_channel", "search": "election" }
+```
+
+Check status any time:
+
+```bash
+python -m app.services.collectors.telegram status
+```
+
+**What it will not do**
+
+| Situation | Result |
+| --- | --- |
+| Private channel your account cannot see | `ACCESS_DENIED` — no invite guessing, no join |
+| Rate limited (FloodWait) | `RATE_LIMITED` with the wait time — **no retry** |
+| Session not authorized | `AUTHENTICATION_REQUIRED` + a pointer to `login` |
+| No `api_id` / `api_hash` | adapter disabled, rest of the pipeline unaffected |
+| Collection fails midway | recorded as an error — **never** as evidence |
+
+Because it is async and writes a session file, collection runs in an isolated
+subprocess, so it can never block or corrupt the API server's event loop.
+
+</details>
+
+<details>
+<summary><b>🔐 How browser sessions are provided (X / IG / FB / and others)</b></summary>
+
+Sessions are exported from **your own** logged-in browser and supplied via
+environment variables — never committed, never logged, never sent to the LLM.
 
 ```bash
 # .env — one block per platform
@@ -90,15 +152,12 @@ FACEBOOK_COOKIES_JSON=
 PLATFORM_USERNAME=
 PLATFORM_PASSWORD=
 PLATFORM_LOGIN_URL=
-
-# ── Messaging sessions ──
-TELEGRAM_SESSION=
-ELEMENT_HOMESERVER=
-ELEMENT_ACCESS_TOKEN=
-WHATSAPP_SESSION=
 ```
 
-Enforced restrictions — MFA/CAPTCHA ⇒ manual pause (**no bypass**) · rate limit ⇒ `RATE_LIMITED` · bot-wall ⇒ `BLOCKED`. A failed collection is **never** recorded as evidence. Provenance is always tagged `authenticated_browser` + `investigator_owned_account`.
+Enforced restrictions — MFA/CAPTCHA ⇒ manual pause (**no bypass**) · rate limit
+⇒ `RATE_LIMITED` · bot-wall ⇒ `BLOCKED`. A failed collection is **never**
+recorded as evidence. Provenance is always tagged `authenticated_browser` +
+`investigator_owned_account`.
 
 </details>
 
@@ -115,8 +174,9 @@ Enforced restrictions — MFA/CAPTCHA ⇒ manual pause (**no bypass**) · rate l
 ### 🌐 Multi-Source Collection
 - **📰 RSS / news** — live ingestion via `feedparser`
 - **🕸️ Public web** — live, robots-respecting article fetcher
-- **💬 Messaging** — Telegram, Element/Matrix, WhatsApp via authenticated sessions
+- **💬 Telegram** — **real MTProto client** (Telethon), session reuse, media download + OCR
 - **🖥️ Authorized browser** — investigator-owned accounts, Playwright driver in an isolated subprocess
+- **💬 Messaging (Element/Matrix, WhatsApp)** — in progress, sessions required
 - **📝 Manual upload** — analyst-supplied evidence when a connector is unavailable
 
 ### 🧠 Three-Layer Enrichment
@@ -176,6 +236,7 @@ P1 Objective  →  P2 Platforms  →  P3 Search  →  P4 Account ID  →  P5 A�
 - **Node.js 18+** — only for the Next.js dashboard
 - **PostgreSQL 14+** — production · SQLite works for zero-dependency local dev
 - **Groq API key** — optional; without it a deterministic mock is used
+- **Telegram `api_id` / `api_hash`** — only for the Telegram collector
 
 ### 1️⃣ Database
 
@@ -273,7 +334,7 @@ docker compose up --build
 │   │   ├── schemas/       # Pydantic contracts
 │   │   ├── services/
 │   │   │   ├── assessment/    # Label + confidence engine
-│   │   │   ├── collectors/    # RSS, web, messaging, browser, manual
+│   │   │   ├── collectors/    # RSS, web, telegram, browser, manual
 │   │   │   ├── enrichment/    # prefilter → clean → LLM extract
 │   │   │   ├── evidence/      # Hash-verified artifact store
 │   │   │   ├── ocr/           # Image text extraction
@@ -305,8 +366,10 @@ docker compose up --build
 | `S3_ENDPOINT` / `S3_BUCKET` | ➖ | Swap local evidence store for S3-compatible storage |
 | `*_COOKIES_JSON` | ➖ | Per-platform session cookies — see [Platforms](#-platforms--access) |
 | `*_USERNAME` / `*_PASSWORD` | ➖ | Authorized browser login — never logged or sent to LLM |
-| `TELEGRAM_SESSION` | ➖ | Telegram MTProto session |
-| `ELEMENT_HOMESERVER` / `ELEMENT_ACCESS_TOKEN` | ➖ | Element / Matrix credentials |
+| `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | ➖ | Telegram app credentials from my.telegram.org |
+| `TELEGRAM_PHONE` | ➖ | E.164 number, only used by the one-time `login` command |
+| `TELEGRAM_2FA_PASSWORD` | ➖ | 2FA password for `login` — as sensitive as a password |
+| `TELEGRAM_SESSION` | ➖ | StringSession for CI/headless (no code entry possible) |
 
 ---
 
@@ -317,6 +380,10 @@ cd backend
 source .venv/bin/activate
 pytest -v
 ```
+
+The Telegram suite runs fully offline — `FakeTelegramDriver` stands in for
+Telethon, and a fake `api_hash` / phone / session string are asserted to never
+appear in results, records, provenance, errors or the session marker.
 
 ---
 

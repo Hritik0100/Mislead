@@ -104,7 +104,18 @@ def run_collection(db: Session, case_id: str, sources: list, max_items=50):
                     all_recs += recs
                     if err:
                         errors.append(err)
-                elif t in ("telegram", "chirpwire", "matrix", "element", "facebook", "instagram", "x", "youtube", "social"):
+                elif t == "telegram":
+                    # REAL MTProto collector (Telethon, isolated subprocess).
+                    # Only the investigator's own authorized view; a private
+                    # entity is reported ACCESS_DENIED, never worked around.
+                    res = tg_c.run_telegram_task(dict(s))
+                    all_recs += res.get("records", [])
+                    for e in res.get("errors", []):
+                        errors.append(f"telegram [{res.get('status')}]: {e}")
+                    if res.get("status") not in ("SUCCESS", "PARTIAL", "EMPTY"):
+                        errors.append(f"telegram status={res.get('status')} "
+                                      f"reason={res.get('reason_code', '')}")
+                elif t in ("chirpwire", "matrix", "element", "facebook", "instagram", "x", "youtube", "social"):
                     recs, err = tg_c.collect_platform_stub(t, s.get("channel") or s.get("handle") or s.get("url", ""), s.get("note", ""))
                     for r in recs:
                         r.provenance = {"collection_method": "analyst_provided",

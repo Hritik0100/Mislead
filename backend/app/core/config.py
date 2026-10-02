@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     IG_USERNAME: str = ""
     IG_PASSWORD: str = ""
     X_COOKIES_JSON: str = ""
+    # Telegram: app credentials from my.telegram.org + investigator's own login.
+    # TELEGRAM_2FA_PASSWORD / TELEGRAM_SESSION are as sensitive as a password.
+    TELEGRAM_API_ID: int = 0
+    TELEGRAM_API_HASH: str = ""
+    TELEGRAM_PHONE: str = ""
+    TELEGRAM_SESSION: str = ""
+    TELEGRAM_2FA_PASSWORD: str = ""
 
     class Config:
         env_file = ".env"

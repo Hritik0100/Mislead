@@ -61,17 +61,37 @@ Raw posts and media are turned into **hash-verified evidence**, run through a st
 
 | Platform | Auth required | Session type | Status |
 | :--- | :---: | --- | :---: |
-| 💬 **Telegram** | ✅ Login + session | MTProto (Telethon) | ✅ **Live** |
+| 💬 **Telegram** | ✅ Login + session | MTProto (Telethon) | ✅ Live |
+| 𝕏 **X (Twitter)** | ✅ Login + session | Cookie / auth token | ✅ Live |
+| 📸 **Instagram** | ✅ Login + session | Cookie / auth token | ✅ Live |
+| 📘 **Facebook** | ✅ Login + session | Cookie / auth token | ✅ Live |
 | 🧩 **Element / Matrix** | ✅ Login + session | Access token + homeserver | 🚧 In progress |
 | 📲 **WhatsApp** | ✅ Login + session | Linked-device session | 🚧 In progress |
-| 𝕏 **X (Twitter)** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
-| 📸 **Instagram** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
-| 📘 **Facebook** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
 | 📰 **RSS / News** | ➖ None | Public feed | ✅ Live |
 | 🕸️ **Public web** | ➖ None | Public HTML | ✅ Live |
 | 📝 **Manual upload** | ➖ Analyst | Analyst-supplied | ✅ Live |
 
-**Legend:** ✅ Live · 🚧 In progress · ⏳ Planned
+**Legend:** ✅ Live · 🚧 In progress
+
+<details>
+<summary><b>⚠️ Which source spec to use — read this before adding a source</b></summary>
+
+X, Instagram and Facebook have **two** routes, and picking the wrong one silently
+gives you a placeholder instead of real posts:
+
+| Source spec | What you get |
+| --- | --- |
+| `{"type": "x", ...}` | 🚫 **Stub** — a placeholder post marked `needs_manual_evidence` |
+| `{"type": "auth_browser", "platform": "x", ...}` | ✅ **Real** — logged-in Playwright + the platform's DOM extractor |
+
+The same applies to `instagram` and `facebook`. **Always use `type: "auth_browser"`
+with a `platform` field for these three.** Telegram is the exception: it uses
+`type: "telegram"` because it is a MTProto client, not a browser.
+
+A run that only ever produced `[stub]` records means the source was configured
+with the wrong `type`.
+
+</details>
 
 <details>
 <summary><b>💬 Setting up Telegram (real collector)</b></summary>
@@ -134,6 +154,77 @@ subprocess, so it can never block or corrupt the API server's event loop.
 </details>
 
 <details>
+<summary><b>🔐 Setting up X, Instagram and Facebook (real browser collector)</b></summary>
+
+These three run through a **logged-in Playwright browser** using an
+investigator-owned account, then extract posts with a per-platform DOM
+extractor (`services/collectors/social_dom.py`). Nothing is scraped anonymously
+and no access control is circumvented.
+
+**1. Point Playwright at your real Chrome**
+
+```bash
+pip install playwright     # uses the system Chrome, no bundled download needed
+```
+
+**2. Provide a session** — either export cookies from your own browser, or let
+the collector log in for you:
+
+```bash
+# backend/.env
+X_COOKIES_JSON=         # JSON array exported from your own X session
+INSTAGRAM_COOKIES_JSON=
+FACEBOOK_COOKIES_JSON=
+
+# ...or username/password login (one pair per platform prefix)
+X_USERNAME=
+X_PASSWORD=
+X_LOGIN_URL=https://x.com/login
+INSTAGRAM_USERNAME=
+INSTAGRAM_PASSWORD=
+```
+
+**3. Add the source to a case**
+
+```json
+{ "type": "auth_browser", "platform": "x", "driver": "playwright",
+  "cookies_env": "X_COOKIES_JSON", "mode": "search",
+  "search_url": "https://x.com/search?q=election&f=live",
+  "search_query": "election", "max_items": 20, "ocr": true }
+```
+
+```json
+{ "type": "auth_browser", "platform": "instagram", "driver": "playwright",
+  "cookies_env": "INSTAGRAM_COOKIES_JSON", "mode": "collect_urls",
+  "urls": ["https://www.instagram.com/p/XXXX/"], "ocr": true }
+```
+
+```json
+{ "type": "auth_browser", "platform": "facebook", "driver": "playwright",
+  "cookies_env": "FACEBOOK_COOKIES_JSON", "mode": "collect_urls",
+  "urls": ["https://www.facebook.com/page/posts/12345"], "ocr": true }
+```
+
+**Modes**
+
+| `mode` | Does |
+| --- | --- |
+| `login_test` | Verifies the session only, collects nothing |
+| `manual_login` | Opens a visible window; **you** finish the captcha / emailed code / MFA |
+| `search` | Reads posts from a search or listing page you supply |
+| `collect_urls` | Opens each URL in `urls` and reads that post |
+
+Use `manual_login` when the platform challenges you — the tool will never solve
+a captcha or guess a one-time code itself.
+
+**OCR** — when a post is a poster, meme or screenshot, the claim lives in the
+pixels. With `ocr: true` the image is read locally, the text is attached for
+search, and the image itself is stored as evidence so you can verify exactly
+what was read.
+
+</details>
+
+<details>
 <summary><b>🔐 How browser sessions are provided (X / IG / FB / and others)</b></summary>
 
 Sessions are exported from **your own** logged-in browser and supplied via
@@ -175,8 +266,7 @@ recorded as evidence. Provenance is always tagged `authenticated_browser` +
 - **📰 RSS / news** — live ingestion via `feedparser`
 - **🕸️ Public web** — live, robots-respecting article fetcher
 - **💬 Telegram** — **real MTProto client** (Telethon), session reuse, media download + OCR
-- **🖥️ Authorized browser** — investigator-owned accounts, Playwright driver in an isolated subprocess
-- **💬 Messaging (Element/Matrix, WhatsApp)** — in progress, sessions required
+- **𝕏 / 📸 / 📘 X, Instagram, Facebook** — **real logged-in Playwright** + per-platform DOM extractors, local OCR for memes and screenshots
 - **📝 Manual upload** — analyst-supplied evidence when a connector is unavailable
 
 ### 🧠 Three-Layer Enrichment
@@ -237,6 +327,7 @@ P1 Objective  →  P2 Platforms  →  P3 Search  →  P4 Account ID  →  P5 A�
 - **PostgreSQL 14+** — production · SQLite works for zero-dependency local dev
 - **Groq API key** — optional; without it a deterministic mock is used
 - **Telegram `api_id` / `api_hash`** — only for the Telegram collector
+- **Playwright** — `pip install playwright` for the X / Instagram / Facebook collector
 
 ### 1️⃣ Database
 
@@ -334,7 +425,8 @@ docker compose up --build
 │   │   ├── schemas/       # Pydantic contracts
 │   │   ├── services/
 │   │   │   ├── assessment/    # Label + confidence engine
-│   │   │   ├── collectors/    # RSS, web, telegram, browser, manual
+│   │   │   ├── collectors/    # RSS, web, telegram (MTProto), auth_browser
+│   │   │   │                  # (Playwright), manual + social DOM extractors
 │   │   │   ├── enrichment/    # prefilter → clean → LLM extract
 │   │   │   ├── evidence/      # Hash-verified artifact store
 │   │   │   ├── ocr/           # Image text extraction
@@ -364,7 +456,7 @@ docker compose up --build
 | `EVIDENCE_DIR` | ➖ | Local S3-layout evidence root |
 | `REDIS_URL` | ➖ | Queue-backed job mode |
 | `S3_ENDPOINT` / `S3_BUCKET` | ➖ | Swap local evidence store for S3-compatible storage |
-| `*_COOKIES_JSON` | ➖ | Per-platform session cookies — see [Platforms](#-platforms--access) |
+| `X_COOKIES_JSON` / `INSTAGRAM_COOKIES_JSON` / `FACEBOOK_COOKIES_JSON` | ➖ | Per-platform session cookies — see [Platforms](#-platforms--access) |
 | `*_USERNAME` / `*_PASSWORD` | ➖ | Authorized browser login — never logged or sent to LLM |
 | `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | ➖ | Telegram app credentials from my.telegram.org |
 | `TELEGRAM_PHONE` | ➖ | E.164 number, only used by the one-time `login` command |

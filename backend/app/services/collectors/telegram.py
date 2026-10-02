@@ -837,6 +837,13 @@ def collect_platform_stub(platform: str, handle_or_channel: str, note: str = "")
 
     Do NOT scrape. Records an analyst-attested placeholder that requires manual
     evidence upload. These are queued for a real connector, not faked.
+
+    IMPORTANT: x / instagram / facebook are NOT stub-only. They are collected
+    for real by the auth_browser adapter (logged-in Playwright + the DOM
+    extractors in social_dom.py). Reaching this function with one of those names
+    means the source was declared as {"type": "x"} instead of
+    {"type": "auth_browser", "platform": "x", ...}, so the analyst gets a
+    placeholder rather than posts. Fix the source spec, not this collector.
     """
     p = platform.lower()
     if p not in SUPPORTED:

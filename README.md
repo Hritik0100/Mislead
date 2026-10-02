@@ -1,8 +1,4 @@
 <p align="center">
-  <img src="architecture/architecture-diagram.png" alt="OSINT Misleading-News Platform Architecture" width="820">
-</p>
-
-<p align="center">
   <b>OSINT Misleading-News Platform</b><br>
   <i>Evidence-first investigation system for tracking, verifying and reporting on coordinated misinformation</i>
 </p>
@@ -10,20 +6,20 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3670A0?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/SQLAlchemy-2C3E50?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy">
-  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy">
+  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
   <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq">
   <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js">
   <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright">
-  <img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
 </p>
 
 <p align="center">
-  <a href="#-overview">Overview</a> •
+  <a href="#-platforms--access">Platforms</a> •
   <a href="#-key-features">Features</a> •
   <a href="#-investigation-pipeline">Pipeline</a> •
   <a href="#-quick-start">Quick Start</a> •
@@ -33,54 +29,120 @@
 
 ---
 
+## 📐 Architecture
+
+<details>
+<summary><b>Click to expand full system diagram</b></summary>
+
+<br>
+
+<p align="center">
+  <img src="architecture/architecture-diagram.png" alt="OSINT Misleading-News Platform — system architecture" width="420">
+</p>
+
+</details>
+
+---
+
 ## 📖 Overview
 
-**OSINT Misleading-News Platform** is an evidence-first investigation system for analysing public and authorized content across social media, news/RSS and communication platforms.
+**OSINT Misleading-News Platform** is an evidence-first investigation system for analysing public and authorized content across social media, news/RSS and messaging platforms.
 
-It takes raw posts and media, turns them into **hash-verified evidence**, runs a staged LLM-assisted analysis, traces how a claim spread, surfaces coordination signals, and produces a final report with source links, evidence IDs, assessment labels and risk indicators.
+Raw posts and media are turned into **hash-verified evidence**, run through a staged LLM-assisted analysis, traced for spread, screened for coordination signals, and compiled into a final report with source links, evidence IDs, assessment labels and risk indicators.
 
-> 🔍 **Evidence first, verdict second.** Every material conclusion in a report links back to a stored evidence artifact. The LLM is a reasoning assistant, never the source of truth.
+> 🔍 **Evidence first, verdict second.** Every material conclusion links back to a stored, SHA-256 verified artifact. The LLM is a reasoning assistant — never the source of truth.
+
+---
+
+## 📱 Platforms & Access
+
+> 🔐 All social and messaging platforms require an **authenticated session and a valid login**. Only investigator-owned accounts are permitted. No credential sharing, no bypass of platform security controls.
+
+| Platform | Auth required | Session type | Status |
+| :--- | :---: | --- | :---: |
+| 💬 **Telegram** | ✅ Login + session | MTProto session / bot token | 🚧 In progress |
+| 🧩 **Element / Matrix** | ✅ Login + session | Access token + homeserver | 🚧 In progress |
+| 📲 **WhatsApp** | ✅ Login + session | Linked-device session | 🚧 In progress |
+| 𝕏 **X (Twitter)** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
+| 📸 **Instagram** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
+| 📘 **Facebook** | ✅ Login + session | Cookie / auth token | ⏳ Planned |
+| 📰 **RSS / News** | ➖ None | Public feed | ✅ Live |
+| 🕸️ **Public web** | ➖ None | Public HTML | ✅ Live |
+| 📝 **Manual upload** | ➖ Analyst | Analyst-supplied | ✅ Live |
+
+**Legend:** ✅ Live · 🚧 In progress · ⏳ Planned
+
+<details>
+<summary><b>🔐 How sessions are provided</b></summary>
+
+Sessions are exported from **your own** logged-in browser and supplied via environment variables — never committed, never logged, never sent to the LLM.
+
+```bash
+# .env — one block per platform
+
+# ── Cookies (JSON array exported from your own browser) ──
+X_COOKIES_JSON=
+INSTAGRAM_COOKIES_JSON=
+FACEBOOK_COOKIES_JSON=
+
+# ── Login credentials for authorized browser collection ──
+# One pair per platform prefix, e.g. OUTLET_USERNAME / OUTLET_PASSWORD
+PLATFORM_USERNAME=
+PLATFORM_PASSWORD=
+PLATFORM_LOGIN_URL=
+
+# ── Messaging sessions ──
+TELEGRAM_SESSION=
+ELEMENT_HOMESERVER=
+ELEMENT_ACCESS_TOKEN=
+WHATSAPP_SESSION=
+```
+
+Enforced restrictions — MFA/CAPTCHA ⇒ manual pause (**no bypass**) · rate limit ⇒ `RATE_LIMITED` · bot-wall ⇒ `BLOCKED`. A failed collection is **never** recorded as evidence. Provenance is always tagged `authenticated_browser` + `investigator_owned_account`.
+
+</details>
 
 ---
 
 ## ✨ Key Features
 
 ### 🗂️ Case & Evidence Management
-- **📁 Case scoping** — define objective, keywords, platforms, time range and collection scope per investigation
-- **🔐 Hash-verified store** — every artifact stored with SHA-256, verifiable via API (`GET /api/evidence/{id}/verify`)
-- **🧾 Provenance capture** — account, username, platform, timestamp, post URL, source, media and engagement data
+- **📁 Case scoping** — objective, keywords, platforms, time range per investigation
+- **🔐 Hash-verified store** — every artifact stored with SHA-256, verifiable via `GET /api/evidence/{id}/verify`
+- **🧾 Provenance** — account, username, platform, timestamp, post URL, source, media, engagement
 - **📸 Media retention** — screenshots and attachments preserved where permitted, with optional OCR
 
 ### 🌐 Multi-Source Collection
-- **📰 RSS / news** — real ingestion via `feedparser`
-- **🕸️ Public web** — real, robots-respecting article fetcher
-- **✈️ Telegram** — public channel/signal ingestion
-- **🖥️ Authorized browser** — investigator-owned accounts only, via Playwright
+- **📰 RSS / news** — live ingestion via `feedparser`
+- **🕸️ Public web** — live, robots-respecting article fetcher
+- **💬 Messaging** — Telegram, Element/Matrix, WhatsApp via authenticated sessions
+- **🖥️ Authorized browser** — investigator-owned accounts, Playwright driver in an isolated subprocess
 - **📝 Manual upload** — analyst-supplied evidence when a connector is unavailable
-- **🚫 Hard limits** — no paywall bypass, no auth circumvention, no private-group access
 
 ### 🧠 Three-Layer Enrichment
-- **Layer 1 — Pre-filter** — cheap keyword/regex gate drops obvious noise before any LLM cost
+- **Layer 1 — Pre-filter** — keyword/regex gate drops noise before any LLM spend
 - **Layer 2 — Clean text** — BeautifulSoup + `lxml` strip boilerplate, nav and ads
-- **Layer 3 — Groq JSON extraction** — structured, Pydantic-validated output with deterministic mock fallback
+- **Layer 3 — Groq JSON extraction** — structured, Pydantic-validated, deterministic mock fallback
 
 ### 🎯 Five-Key OSINT Analysis
-- **A. Identify Fake News** — scan for potentially misleading claims
-- **B. Find Original Source** — earliest/candidate originating post via chronology + similarity
-- **C. Trace Spread** — amplification graph with typed edges between accounts and platforms
-- **D. Verify Claim** — compare claim against retrieved primary/secondary evidence
-- **E. Check Coordination** — synchronized posting, repeated wording, shared URLs, temporal patterns
+| | Query | Purpose |
+| :---: | --- | --- |
+| **A** | Identify Fake News | scan for potentially misleading claims |
+| **B** | Find Original Source | earliest post via chronology + similarity |
+| **C** | Trace Spread | amplification graph with typed edges |
+| **D** | Verify Claim | compare against primary/secondary evidence |
+| **E** | Check Coordination | synchronized timing, repeated wording, shared URLs |
 
 ### ⚖️ Assessment & Reporting
 - **🏷️ Five labels** — `True` · `False` · `Misleading` · `Context Missing` · `Unverified`
-- **📊 Confidence separated** from the truth label, never conflated with it
+- **📊 Confidence separate** from the truth label, never conflated
 - **↔️ Supporting vs contradicting** evidence shown side by side
-- **🧑‍⚖️ Analyst override** — requires a mandatory written rationale, fully audited
-- **📄 Exports** — human-readable report and machine-readable JSON
+- **🧑‍⚖️ Analyst override** — mandatory written rationale, fully audited
+- **📄 Exports** — human-readable report + machine-readable JSON
 
 ### 🛡️ Safety by Design
-- **🚦 Indicators, not accusations** — coordination output is a set of explainable factors for human review, never a verdict against a person or org
-- **🔑 Secrets never committed** — `.env`, session cookie jars, SQLite DBs and evidence artifacts are git-ignored
+- **🚦 Indicators, not accusations** — coordination output is explainable evidence for human review
+- **🔑 Secrets never committed** — `.env`, cookie jars, DBs and evidence are git-ignored
 - **🔒 Server-only LLM key** — `GROQ_API_KEY` never reaches the frontend bundle
 
 ---
@@ -96,13 +158,13 @@ P1 Objective  →  P2 Platforms  →  P3 Search  →  P4 Account ID  →  P5 A�
                                                             coordination)
 ```
 
-| Stage | What happens | Key artifact |
+| Stage | What happens | Artifact |
 | --- | --- | --- |
 | **P1** Objective | Analyst sets objective, keywords, platforms, time window | Case record |
-| **P2** Platforms | Connector registry resolves which sources are permitted | Source spec |
+| **P2** Platforms | Connector registry resolves permitted sources + sessions | Source spec |
 | **P3** Search | Collectors ingest posts, articles, channels, manual uploads | Raw content |
-| **P4** Account ID | Accounts are identified, deduplicated and linked to provenance | Account set |
-| **P5** A–E | Fake-detect, origin, spread, verification, coordination run | Findings |
+| **P4** Account ID | Accounts identified, deduplicated, linked to provenance | Account set |
+| **P5** A–E | Fake-detect, origin, spread, verification, coordination | Findings |
 | **P6** Report | Assessment engine merges evidence + model output | Final report |
 
 ---
@@ -111,30 +173,55 @@ P1 Objective  →  P2 Platforms  →  P3 Search  →  P4 Account ID  →  P5 A�
 
 ### Prerequisites
 - **Python 3.11+**
-- **Node.js 18+** (only if you want the Next.js dashboard)
-- **A Groq API key** — optional; without it a deterministic mock is used
+- **Node.js 18+** — only for the Next.js dashboard
+- **PostgreSQL 14+** — production · SQLite works for zero-dependency local dev
+- **Groq API key** — optional; without it a deterministic mock is used
 
-### 1️⃣ Backend
+### 1️⃣ Database
+
+```bash
+# Production — PostgreSQL
+createdb osint
+psql osint
+```
+
+```bash
+# Local dev — zero dependencies, file-based
+# (default DATABASE_URL already points here)
+```
+
+### 2️⃣ Backend
 
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env                                     # add GROQ_API_KEY for real LLM
+cp .env.example .env
+```
+
+```bash
+# .env
+DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/osint
+REDIS_URL=redis://localhost:6379/0
+GROQ_API_KEY=your_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+APP_SECRET_KEY=change-me
+EVIDENCE_DIR=./data/evidence
+```
+
+```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-No Postgres or Redis required locally — SQLite + in-process jobs out of the box.
-
-### 2️⃣ Open the app
+### 3️⃣ Open the app
 
 | Surface | URL |
 | --- | --- |
 | 🖥️ Dashboard | http://localhost:8000/dashboard |
-| 📚 API docs (Swagger) | http://localhost:8000/docs |
-| 💚 Health check | http://localhost:8000/health |
+| 📚 API docs | http://localhost:8000/docs |
+| 💚 Health | http://localhost:8000/health |
 
-### 3️⃣ Frontend dashboard (optional)
+### 4️⃣ Frontend dashboard *(optional)*
 
 ```bash
 cd frontend
@@ -142,7 +229,7 @@ npm install
 npm run dev            # http://localhost:3000
 ```
 
-### 4️⃣ Docker (optional)
+### 5️⃣ Docker *(optional)*
 
 ```bash
 docker compose up --build
@@ -176,7 +263,7 @@ docker compose up --build
 
 ```
 .
-├── architecture/          # Architecture diagram
+├── architecture/          # System diagram
 ├── backend/               # FastAPI + SQLAlchemy service
 │   ├── app/
 │   │   ├── api/           # Routes + dashboard UI
@@ -186,7 +273,7 @@ docker compose up --build
 │   │   ├── schemas/       # Pydantic contracts
 │   │   ├── services/
 │   │   │   ├── assessment/    # Label + confidence engine
-│   │   │   ├── collectors/    # RSS, web, Telegram, browser, manual
+│   │   │   ├── collectors/    # RSS, web, messaging, browser, manual
 │   │   │   ├── enrichment/    # prefilter → clean → LLM extract
 │   │   │   ├── evidence/      # Hash-verified artifact store
 │   │   │   ├── ocr/           # Image text extraction
@@ -197,8 +284,7 @@ docker compose up --build
 │   └── tests/             # pytest suite
 ├── frontend/              # Next.js 14 case dashboard
 │   └── src/app/cases/[id] # overview, claims, evidence, media,
-│                         # timeline, propagation,
-│                         # coordination, report
+│                         # timeline, propagation, coordination, report
 ├── infra/docker/          # Backend Dockerfile
 ├── docker-compose.yml
 └── .env.example
@@ -209,42 +295,18 @@ docker compose up --build
 ## ⚙️ Environment Variables
 
 | Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | SQLAlchemy URL. Local default `sqlite:///./data/osint.db` |
-| `GROQ_API_KEY` | no | Groq key. Absent ⇒ deterministic mock enrichment |
-| `GROQ_MODEL` | no | Defaults to `llama-3.3-70b-versatile` |
-| `EVIDENCE_DIR` | no | Local S3-layout evidence root |
-| `APP_SECRET_KEY` | yes | App signing secret. Change for any real deployment |
-| `REDIS_URL` | no | Reserved for queue-backed job mode |
-| `S3_ENDPOINT` / `S3_BUCKET` | no | Swap local evidence store for S3-compatible storage |
-
-<details>
-<summary><b>🔐 Optional: authorized browser collection (investigator-owned accounts only)</b></summary>
-
-Disabled unless credentials are present. Passwords are never logged, never stored, and never sent to the LLM.
-
-```bash
-# One pair per platform prefix, e.g. OUTLET_USERNAME / OUTLET_PASSWORD
-# PLATFORM_USERNAME=
-# PLATFORM_PASSWORD=
-# PLATFORM_LOGIN_URL=
-# X_COOKIES_JSON=        # session cookies exported from your OWN browser
-```
-
-Source spec:
-```json
-{
-  "type": "auth_browser",
-  "platform": "outlet",
-  "env_prefix": "OUTLET",
-  "login_url": "https://…",
-  "mode": "login_test | search | collect_urls"
-}
-```
-
-Enforced restrictions — MFA/CAPTCHA ⇒ `*_REQUIRED` + manual pause (**no bypass**), 429 ⇒ `RATE_LIMITED`, bot-walls ⇒ `BLOCKED`. Failures are never converted into contradictory evidence. Provenance is always recorded as `authenticated_browser` + `investigator_owned_account`.
-
-</details>
+| --- | :---: | --- |
+| `DATABASE_URL` | ✅ | SQLAlchemy URL — `postgresql+psycopg://…` in prod, `sqlite:///…` locally |
+| `APP_SECRET_KEY` | ✅ | App signing secret — change for any real deployment |
+| `GROQ_API_KEY` | ➖ | Absent ⇒ deterministic mock enrichment |
+| `GROQ_MODEL` | ➖ | Defaults to `llama-3.3-70b-versatile` |
+| `EVIDENCE_DIR` | ➖ | Local S3-layout evidence root |
+| `REDIS_URL` | ➖ | Queue-backed job mode |
+| `S3_ENDPOINT` / `S3_BUCKET` | ➖ | Swap local evidence store for S3-compatible storage |
+| `*_COOKIES_JSON` | ➖ | Per-platform session cookies — see [Platforms](#-platforms--access) |
+| `*_USERNAME` / `*_PASSWORD` | ➖ | Authorized browser login — never logged or sent to LLM |
+| `TELEGRAM_SESSION` | ➖ | Telegram MTProto session |
+| `ELEMENT_HOMESERVER` / `ELEMENT_ACCESS_TOKEN` | ➖ | Element / Matrix credentials |
 
 ---
 
@@ -260,12 +322,13 @@ pytest -v
 
 ## 🔐 Security Notes
 
-- ✅ `.env`, session cookie jars, `data/`, `*.db` and evidence artifacts are git-ignored
+- ✅ `.env`, cookie jars, `data/`, `*.db` and evidence artifacts are git-ignored
 - ✅ `GROQ_API_KEY` is server-only and never exposed to the frontend
 - ✅ Evidence integrity is verifiable end-to-end via SHA-256
 - ✅ Analyst overrides require a rationale and are audited
 - ⚠️ Change `APP_SECRET_KEY` before any non-local deployment
 - ⚠️ Use authorized, investigator-owned accounts only — never third-party credentials
+- ⚠️ Sessions are as sensitive as passwords — never commit or share them
 
 ---
 
@@ -281,6 +344,4 @@ Issues and pull requests are welcome. Please keep changes evidence-first: if a c
 
 ---
 
-<p align="center">
-  Made with 🕵️ for evidence-first OSINT investigation
-</p>
+<p align="center">Made with 🕵️ for evidence-first OSINT investigation</p>
